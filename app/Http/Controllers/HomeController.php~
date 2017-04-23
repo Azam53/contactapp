@@ -1,0 +1,122 @@
+<?php
+ // Login controller class
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+use App\Http\Requests;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Hash;
+use Auth;
+use App\User;
+       
+class HomeController extends Controller
+{
+    
+	public function showLogin()
+	{
+	    // show the form
+              
+	    return view('login');
+	}
+
+	public function doLogin(Request $request)
+	{
+	// process the form
+          // validate the info, create rules for the inputs
+			$rules = array(
+			    'email'    => 'required|email', // make sure the email is an actual email
+			    'password' => 'required|alphaNum|min:3' // password can only be alphanumeric and has to be greater than 3 characters
+			);
+
+			// run the validation rules on the inputs from the form
+			$validator = Validator::make(Input::all(), $rules);
+
+			// if the validator fails, redirect back to the form
+			if ($validator->fails()) {
+			    return Redirect::to('login')
+				->withErrors($validator) // send back all errors to the login form
+				->withInput(Input::except('password')); // send back the input (not the password) so that we can repopulate the form
+			} else {
+
+			    // create our user data for the authentication
+			    $userdata = array(
+				'email'     => Input::get('email'),
+				'password'  => Input::get('password')
+			    );
+                               
+			    // attempt to do the login
+			    if (Auth::attempt($userdata)) {
+
+				// validation successful!
+				// redirect them to the secure section or whatever
+				// return Redirect::to('secure');
+				// for now we'll just echo success (even though echoing in a controller is bad)
+                                
+				Redirect::to('dashboard');
+
+			    } else {        
+
+				// validation not successful, send back to form 
+				return Redirect::to('login');
+
+			    }
+
+			}
+	}
+           
+ // function to show signup form
+        public function showSignup()
+        {
+          return view('signup');
+        }
+
+        public function doSignup(Request $request)
+        {
+          
+          // validate the info, create rules for the inputs
+			$rules = array(
+                            'name'    => 'required', // make sure the present in the request
+			    'email'    => 'required|email', // make sure the email is an actual email
+			    'password' => 'required|alphaNum|min:3' // password can only be alphanumeric and has to be greater than 3 characters
+			);
+
+			// run the validation rules on the inputs from the form
+			$validator = Validator::make(Input::all(), $rules);
+
+			// if the validator fails, redirect back to the form
+			if ($validator->fails()) {
+			    return Redirect::to('signup')
+				->withErrors($validator) // send back all errors to the login form
+				->withInput(Input::except('password')); // send back the input (not the password) so that we can repopulate the form
+			} 
+                    // checking for unique email $no_email is a var to keep track of no of email in user table 
+                          $email_count = 0; 
+                          $email = Input::get('email');
+                          $email_count = User::where('email', $email)->count();
+                           
+                        if($email_count == 0) {
+                    // making instance of user model to store in user table 
+                           $user = new User;
+                           $password = Input::get('password');
+                           $user->name = Input::get('name');
+                           $user->email = Input::get('email');
+                           $user->password = Hash::make($password);
+                           
+                           $user->save();
+                           return Redirect::to('login');
+                         } 
+                        else{
+                            $unique_track = 1;
+                            return view('signup',compact('unique_track'));
+                         }
+          }
+
+          public function doLogout()
+	{
+	   Auth::logout(); // log the user out of our application
+           return Redirect::to('login'); // redirect the user to the login screen
+	}
+                 
+                                    
+}
